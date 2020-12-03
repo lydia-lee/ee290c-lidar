@@ -12,6 +12,9 @@ function [array_ideal, array_nonideal] = make_opa(N, d, amp_sigma, phase_sigma, 
         angle_steer: Ideal steering angle (deg);
         lamda: Nominal signal wavelength (m).
         phase_bins: Available phase bins due to driver quantization (rad).
+            Values should fall within [0, 2pi]. Note that if you include 0,
+            you should include 2pi as well to account for toolbox rounding
+            error.
     Outputs:
     %}
     % Constants for future use
@@ -25,13 +28,10 @@ function [array_ideal, array_nonideal] = make_opa(N, d, amp_sigma, phase_sigma, 
     % steering angle
     steervec = phased.SteeringVector('SensorArray', array_ideal, ...
                                      'IncludeElementResponse', true);
-    ind_response_ideal = steervec.step(physconst('lightspeed'), angle_steer);
-    ind_phase_ideal = zeros(size(ind_response_ideal));
-    psi_ideal = (sin(angle_steer*pi/180)*2*pi.*d / lamda);
-    for i = 1:numel(ind_response_ideal)
-        % ind_phase_ideal(i) = phase(ind_response_ideal(i) * pi/180);
-        ind_phase_ideal(i) = mod(psi_ideal * i, 2*pi);
-    end
+    sv = steervec(freq, [angle_steer]);
+    ind_phase_ideal = angle(sv); % phase setting for each individual element
+    ind_phase_ideal = ind_phase_ideal - ind_phase_ideal(1);
+    ind_phase_ideal = mod(ind_phase_ideal, 2*pi);
     
     % Find nearest phase match in phase_bins and calculate the phase error
     % for each phased array element (rad)

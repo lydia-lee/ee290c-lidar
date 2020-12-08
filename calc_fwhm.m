@@ -14,11 +14,26 @@ pat_vec_norm = pat_vec - pat_peak;
 % Find isoline for the -3dB point
 val = -3;
 pat_vec_norm_concat = [pat_vec_norm, pat_vec_norm];
-C = contour(az_vec, [0,1], pat_vec_norm_concat', [val val]);
+cont_matrix = contour(az_vec, [0,1], pat_vec_norm_concat', [val val]);
 
 % Remove junk from contour
+indices = find(cont_matrix(2,:)>0);
+cont_matrix(:,indices) = [];
+cont_vec = cont_matrix(1,:);
 
+% Find nearest -3dB points relative to peak (making some assumptions here
+% about the shape of the output, but they're safe)
+[~,k] = mink(abs(cont_vec-az_peak), 2);
+az_start = cont_vec(min(k));
+az_stop = cont_vec(max(k));
+fwhm = az_stop - az_start;
 
+if az_start > az_peak
+    error('-3dB on left side not included in azimuth sweep');
+end
+if az_stop < az_peak
+    error('-3dB point on right side not included in azimuth sweep');
+end
 
 end
 

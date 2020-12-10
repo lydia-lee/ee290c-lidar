@@ -5,12 +5,12 @@ clc;
 % --------- BEGIN EDIT ---------
 lamda = 1.55e-6; % meters
 N = 3000;
-d = 4.5e-6; % meters
+d = 10e-6; % meters
 amp_sigma = [0, 0]; % normalize to 1
 phase_sigma = [0, 0]; % rad
 angle_steer = 10; % deg
 phase_bins = [0, pi, 2*pi]; % rad
-angle_plot =  9:0.0001:11; % azimuth angles (degrees)
+angle_plot =  0:0.0001:11; % azimuth angles (degrees)
 % ---------- END EDIT ----------
 c = physconst('lightspeed');
 freq = c/lamda;
@@ -53,14 +53,14 @@ plot(az_ideal_vec, pat_ideal_vec, 'DisplayName', sprintf('%0.1f deg', angle_stee
 %%
 % --------- BEGIN EDIT ---------
 lamda = 1.55e-6; % meters
-N = 500;
-d_vec = [1.0:0.5:20] * 1e-6; % meters
+N = 20000;
+d_vec = [1.0:0.1:4.5] * 1e-6; % meters - 9.0
 amp_sigma = [0, 0]; % normalize to 1
 phase_sigma = [0, 0]; % rad
-angle_steer = 10; % deg
+angle_steer = 19; % deg
 phase_bins = [0, pi, 2*pi]; % rad
-fwhm_max = 100e-6; % rad
-angle_plot =  0:0.0001:11; % azimuth angles (degrees)
+fwhm_max = 110e-6; % rad
+angle_plot =  9.8:0.00001:10.2; % azimuth angles (degrees)
 % ---------- END EDIT ----------
 c = physconst('lightspeed');
 freq = c/lamda;
@@ -76,6 +76,13 @@ for i = 1:numel(d_vec)
     % control, etc.)
     while ~done
         N_mid = round((N_high+N_low)/2);
+        
+        % Break if you get too high
+        if N_mid > 30000
+            disp("break @ d=" + d);
+            break
+        end
+        
         [array_ideal, ~] = make_opa(N_mid, d, amp_sigma, phase_sigma, ...
             angle_steer, lamda, phase_bins);
 
@@ -83,7 +90,7 @@ for i = 1:numel(d_vec)
         steervec_ideal = phased.SteeringVector('SensorArray', array_ideal, ...
             'PropagationSpeed', c, ...
             'IncludeElementResponse', true, ...
-            'NumPhaseShifterBits', 0);
+            'NumPhaseShifterBits', 4);
         sv_ideal = steervec_ideal(freq, angle_steer);
 
         % Apply steering vector to ideal array
@@ -98,15 +105,15 @@ for i = 1:numel(d_vec)
         % Increase N_high and N_low until we've overshot the spec
         if ~range_set
             if fwhm > fwhm_max
-                N_low = N_high;
-                N_high = N_high * 2;
+                N_low = N_mid;
+                N_high = N_high + N_mid;
             else
                 range_set = true;
             end
 
         % Binary search after we've overshot the spec
         else
-            if fwhm == fwhm_max || N_high <= N_mid || N_low >= N_mid
+            if N_high <= N_mid || N_low >= N_mid
                 disp("d/N: " + d + "/" + N_mid);
                 N_vec(i) = N_mid;
                 done = true;
@@ -119,3 +126,6 @@ for i = 1:numel(d_vec)
         end
     end
 end
+
+disp("Pitch Vector" + d_vec);
+disp("Array Size vector " + N_vec);

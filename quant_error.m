@@ -3,11 +3,11 @@ close all;
 clc;
 
 % ---- BEGIN HERE ----
-N_sig = 4; % number of bits used to quantize the controlling signal (e.g. voltage, current, etc.)
+N_sig = 2; % number of bits used to quantize the controlling signal (e.g. voltage, current, etc.)
 N_phase = 2; % number of bits ideally used to quantize the phase shift (e.g. 1 bit -> 0 and pi, 2 bits = 0, pi/2, pi, 3pi/2)
 phase_sig_pow = 2; % exponent of signal-to-phase relationship, e.g. 2 --> phase is proportional to (sig)^2
 sig_2pi = 1; % signal value which corresponds to 2pi phase shift
-FSR = 1.1; % FSR of the DAC
+FSR = 1; % FSR of the DAC
 sig_type = 'Signal'; % Used for a plotting label
 % ----- END HERE -----
 
@@ -20,6 +20,7 @@ scale = sig_2pi/((2*pi)^(1/phase_sig_pow)); % to match the 2pi point
 phase_quant_ideal = [0:2^N_phase-1] * LSB_phase; % ideal quantized phase
 sig_ideal = phase_quant_ideal.^(1/phase_sig_pow) * scale; % ideal signal value corresponding to each phase value
 sig_quant = [0:2^N_sig-1] * LSB_sig; % available quantized signal values
+phase_available = (sig_quant./scale).^(phase_sig_pow);
 
 % Finding the closest approximation possible for each ideal signal value
 sig_real = zeros(size(sig_ideal));
